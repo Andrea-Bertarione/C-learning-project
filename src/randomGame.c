@@ -24,7 +24,14 @@ struct Player_s{
     int stats[5];
 }  Player_Default = {0, "", 100, 100, 0, 0, {10, 10, 10, 10, 10}};
 
+struct Dialogue_s {
+    char text[512];
+    char choices[70][70];
+    struct Dialogue_s* choosenDialogue[];
+} Dialoue_Default = {"test text", {}, {}};
+
 typedef struct Player_s Player;
+typedef struct Dialogue_s Dialogue;
 void printError(char *error);
 int getStat(Player *character, const char *dictionaryValue);
 void updateStat(Player *character, const char *dictionaryValue, int amount);
@@ -35,6 +42,9 @@ void printStats(Player *character);
 void levelUp(Player *character, int lvlAmount);
 int maxHpFormula(int vitalityLvl);
 int xpRequiredFormula(int characterLvl);
+void updateDialogueText(Dialogue* uDialogue, char text[]);
+void updateDialogueChoices(Dialogue* uDialogue, char* choices[], Dialogue* nestDialogues[]);
+void displayDialogue(Dialogue* dDialogue, Player* character);
 
 void printError(char* error) {
     printf("\033[0;31m%s%s\n", error, stopColorCode);
@@ -216,11 +226,47 @@ void levelUp(Player *character, int lvlAmount) {
 }
 
 int maxHpFormula(int vitalityLvl) {
-    return 100 + (10 * sqrt(vitalityLvl - 10));
+    return 100 + (50 * sqrt(vitalityLvl - 10));
 }
 
 int xpRequiredFormula(int characterLvl) {
     return 100 + pow(((float)characterLvl/0.4), 2);
+}
+
+void updateDialogueText(Dialogue* uDialogue, char text[]) {
+    strcpy(uDialogue->text, text);
+
+    return;
+}
+
+void updateDialogueChoices(Dialogue* uDialogue, char* choices[], Dialogue* nestDialogues[]) {
+    int i = 0;
+    size_t progress = 0;
+
+    for (i = 0; progress <= sizeof(*choices); i++){
+        strcpy(uDialogue->choices[i], choices[i]);
+        uDialogue->choosenDialogue[i] = nestDialogues[i];
+
+        progress += sizeof(choices[i]);
+    }
+}
+
+void displayDialogue(Dialogue* dDialogue, Player* character) {
+    system("clear");
+    printf("\033[0;45m------------------------------------------------------------------\033[0m\n");
+    printf("%s\n\n", dDialogue->text);
+
+    int i = 0;
+    size_t progress = 0;
+
+    for (i = 0; progress <= sizeof(*dDialogue->choices); i++) {
+        printf("%d. %s\n", i+1, dDialogue->choices[i]);
+
+        progress += sizeof(dDialogue->choices[i]);
+    }
+    printf("%d. Leave\n\n", i+1);
+
+    printf("\033[0;45m------------------------------------------------------------------\033[0m\n");
 }
 
 int main (void) {
@@ -243,7 +289,7 @@ int main (void) {
     printf("\033[0;42m------------------------------------------------------------------\033[0m\n");
     system("clear");
 
-    levelUp(&character, 3);
+    levelUp(&character, 10);
 
     system("clear");
 
@@ -255,8 +301,23 @@ int main (void) {
     printf("    Punti vita: %d/%d\n\n", character.hp, character.maxhp);
 
     printStats(&character);
-
+    printf("Premi qualsiasi numero e invia per continuare\n");
     printf("\033[0;42m------------------------------------------------------------------\033[0m\n");
-    
+
+    int wait;
+    scanf("%d", &wait);
+
+    Dialogue testDialogue = Dialoue_Default;
+
+    Dialogue choice1 = Dialoue_Default;
+    updateDialogueText(&choice1, "you choose 1");
+    Dialogue choice2 = Dialoue_Default;
+    updateDialogueText(&choice2, "you choose 2");
+
+    char* choices[] = {"Choice 1 display", "Choice 2 display"};
+    Dialogue* DialogueNestList[] = {&choice1, &choice2};
+
+    updateDialogueChoices(&testDialogue, choices, DialogueNestList);
+    displayDialogue(&testDialogue, &character);
     return 0;
 }
